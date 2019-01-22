@@ -1,88 +1,184 @@
-package main
+package hdgen
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
+	"crypto/ecdsa"
+	"errors"
 	"fmt"
-	"github.com/tyler-smith/go-bip32"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tyler-smith/go-bip39"
-	"golang.org/x/crypto/ripemd160"
 )
 
-type keychain struct {
-	masterPrivateKey string
-	masterPublicKey  string
+type Wallet struct {
+	mnemonic    string
+	path        string
+	root        *hdkeychain.ExtendedKey
+	extendedKey *hdkeychain.ExtendedKey
+	privateKey  *ecdsa.PrivateKey
+	publicKey   *ecdsa.PublicKey
 }
 
-type HDWallet struct {
-	seed []byte
-	keychain
+type Config struct {
+	Mnemonic  string
+	Path      string
+	TokenCode string
 }
 
-func main() {
+func GenerateWallet(config *Config) (*Wallet, error) {
 
-	var hdwallet = new(HDWallet)
+	if config.Mnemonic == "" {
+		return nil, errors.New("The mnemonic phrase required")
+	}
 
-	hdwallet.GenerateWallet(WalletGenerator{
-		"wallet1",
-		[]string{"yuri", "gasparyan", "ashot", "erevan", "massiv", "nor", "norq", "tun", "avto", "artcoding", "dantser", "even"},
-		"880088aa",
-	})
-	hdwallet.GenerateAddress(10, 10)
-}
+	var seed = bip39.NewSeed(config.Mnemonic, "")
 
-// Create a new HD wallet
-func (hd *HDWallet) GenerateWallet(wg WalletGenerator) (*HDWallet, error) {
-
-	err := wg.validate()
+	dpath, err := accounts.ParseDerivationPath(config.Path)
 
 	if err != nil {
 		return nil, err
 	}
 
-	hd.seed = bip39.NewSeed(wg.toString(), "")
-
-	masterPrivateKey, err := bip32.NewMasterKey(hd.seed)
+	masterKey, err := hdkeychain.NewMaster(seed, &chaincfg.MainNetParams)
 
 	if err != nil {
 		return nil, err
 	}
 
-	hd.masterPrivateKey = masterPrivateKey.String()
+	key := masterKey
 
-	var masterPublicKey = masterPrivateKey.PublicKey()
+	for _, n := range dpath {
+		key, err = key.Child(n)
+		if err != nil {
+			return nil, err
+		}
+	}
 
-	hd.masterPublicKey = masterPublicKey.String()
+	privateKey, err := key.ECPrivKey()
+	privateKeyECDSA := privateKey.ToECDSA()
+	if err != nil {
+		return nil, err
+	}
 
-	wg.createDataDir()
+	publicKey := privateKeyECDSA.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, errors.New("Failed to get public key")
+	}
 
-	return hd, nil
+	wallet := &Wallet{
+		mnemonic:    config.Mnemonic,
+		path:        config.Path,
+		root:        masterKey,
+		extendedKey: key,
+		privateKey:  privateKeyECDSA,
+		publicKey:   publicKeyECDSA,
+	}
+
+	return wallet, nil
 }
 
-// Generate Address
-func (hd *HDWallet) GenerateAddress(x, y int) {
-	var xpubByte = []byte(hd.masterPublicKey)
+func (wallet Wallet) Derive(index interface{}) (*Wallet, error) {
+	var idx uint32
+	switch v := index.(type) {
+	case int:
+		idx = uint32(v)
+	case int8:
+		idx = uint32(v)
+	case int16:
+		idx = uint32(v)
+	case int32:
+		idx = uint32(v)
+	case int64:
+		idx = uint32(v)
+	case uint:
+		idx = uint32(v)
+	case uint8:
+		idx = uint32(v)
+	case uint16:
+		idx = uint32(v)
+	case uint32:
+		idx = v
+	case uint64:
+		idx = uint32(v)
+	default:
+		return nil, errors.New("unsupported index type")
+	}
 
-	var hasher = sha256.New()
+	fmt.Println(idx)
 
-	hasher.Write(xpubByte)
+	address, err := wallet.extendedKey.Child(idx)
+	if err != nil {
+		return nil, err
+	}
 
-	sha := hex.EncodeToString(hasher.Sum(nil))
+	privateKey, err := address.ECPrivKey()
+	privateKeyECDSA := privateKey.ToECDSA()
+	if err != nil {
+		return nil, err
+	}
 
-	var ripemdHasher = ripemd160.New()
+	publicKey := privateKeyECDSA.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, errors.New("failed ot get public key")
+	}
 
-	ripemdHasher.Write([]byte(sha))
+	path := fmt.Sprintf("%s/%v", wallet.path, idx)
 
-	ripemdHash := hex.EncodeToString(ripemdHasher.Sum(nil))
-
-	fmt.Println(hd.masterPublicKey, sha, ripemdHash)
-
+	return &Wallet{
+		path:        path,
+		root:        wallet.extendedKey,
+		extendedKey: address,
+		privateKey:  privateKeyECDSA,
+		publicKey:   publicKeyECDSA,
+	}, nil
 }
 
-// Get list of accounts
-func (hd *HDWallet) GetAccounts() {}
+// PrivateKey ...
+func (s Wallet) PrivateKey() *ecdsa.PrivateKey {
+	return s.privateKey
+}
 
-// Delete account by hash
-func (hd *HDWallet) DeleteAccount() {
+// PrivateKeyBytes ...
+func (s Wallet) PrivateKeyBytes() []byte {
+	return crypto.FromECDSA(s.PrivateKey())
+}
 
+// PrivateKeyHex ...
+func (s Wallet) PrivateKeyHex() string {
+	return hexutil.Encode(s.PrivateKeyBytes())[2:]
+}
+
+// PublicKey ...
+func (s Wallet) PublicKey() *ecdsa.PublicKey {
+	return s.publicKey
+}
+
+// PublicKeyBytes ...
+func (s Wallet) PublicKeyBytes() []byte {
+	return crypto.FromECDSAPub(s.PublicKey())
+}
+
+// PublicKeyHex ...
+func (s Wallet) PublicKeyHex() string {
+	return hexutil.Encode(s.PublicKeyBytes())[4:]
+}
+
+// Address ...
+func (s Wallet) Address() common.Address {
+	return crypto.PubkeyToAddress(*s.publicKey)
+}
+
+// AddressHex ...
+func (s Wallet) AddressHex() string {
+	return s.Address().Hex()
+}
+
+// Path ...
+func (s Wallet) Path() string {
+	return s.path
 }
