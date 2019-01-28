@@ -22,21 +22,29 @@ type Wallet struct {
 	publicKey   *ecdsa.PublicKey
 }
 
+type Mnemonic struct {
+	phrase string
+	path   string
+}
+
 type Config struct {
-	Mnemonic  string
-	Path      string
-	TokenCode string
+	Mnemonic
+	DataDirectory string `json:"directory"`
+	Name          string `json:"name"`
+	Password      string `json:"password"`
 }
 
 func GenerateWallet(config *Config) (*Wallet, error) {
 
-	if config.Mnemonic == "" {
+	var mnemonic = config.Mnemonic.phrase
+
+	if mnemonic == "" {
 		return nil, errors.New("The mnemonic phrase required")
 	}
 
-	var seed = bip39.NewSeed(config.Mnemonic, "")
+	var seed = bip39.NewSeed(mnemonic, "")
 
-	dpath, err := accounts.ParseDerivationPath(config.Path)
+	dpath, err := accounts.ParseDerivationPath(config.Mnemonic.path)
 
 	if err != nil {
 		return nil, err
@@ -70,8 +78,8 @@ func GenerateWallet(config *Config) (*Wallet, error) {
 	}
 
 	wallet := &Wallet{
-		mnemonic:    config.Mnemonic,
-		path:        config.Path,
+		mnemonic:    config.Mnemonic.phrase,
+		path:        config.Mnemonic.path,
 		root:        masterKey,
 		extendedKey: key,
 		privateKey:  privateKeyECDSA,
