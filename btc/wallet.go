@@ -1,6 +1,7 @@
 package btc
 
 import (
+	"github.com/btcsuite/btcwallet/waddrmgr"
 	btcdWallet "github.com/btcsuite/btcwallet/wallet"
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb"
 	"hdgen/core"
@@ -53,4 +54,27 @@ func (wallet Wallet) Authorize() (core.BTCDInterface, error) {
 
 func (wallet Wallet) Exists() (bool, error) {
 	return wallet.GetLoader().WalletExists()
+}
+
+func (wallet Wallet) NextAccount(name string) (uint32, error) {
+	var w, err = wallet.Authorize()
+
+	// Converting to real type to get a real interface
+	coreWallet, err := w.(btcdWallet.Wallet)
+
+	if err != nil {
+		return 0, nil
+	}
+
+	var keyScope = getKeyScope()
+
+	return coreWallet.NextAccount(keyScope, name)
+}
+
+func getKeyScope() waddrmgr.KeyScope {
+	return waddrmgr.KeyScopeBIP0044
+}
+
+func (wallet Wallet) KeyScope() *core.KeyScope {
+	return nil
 }

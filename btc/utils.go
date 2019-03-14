@@ -6,6 +6,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const coinName = "btc"
+
 func init() {
 	err := godotenv.Load()
 
@@ -14,6 +16,7 @@ func init() {
 	}
 
 }
+
 // Getting wallet loader
 func (wallet *Wallet) GetLoader() *btcdWallet.Loader {
 
@@ -33,4 +36,3 @@ func (wallet *Wallet) GetNetwork() netparams.Params {
 
 	return netparams.MainNetParams
 }
-

@@ -1,7 +1,7 @@
 package ltc
 
 import (
-	"fmt"
+	"github.com/ltcsuite/ltcwallet/waddrmgr"
 	ltcdWallet "github.com/ltcsuite/ltcwallet/wallet"
 	_ "github.com/ltcsuite/ltcwallet/walletdb/bdb"
 	"hdgen/core"
@@ -17,6 +17,7 @@ type Wallet struct {
 var (
 	_ core.WalletInterface = (*Wallet)(nil)
 	_ core.BTCDInterface   = (*ltcdWallet.Wallet)(nil)
+	_ core.BTCDInterface   = ltcdWallet.Wallet{}
 )
 
 func (wallet Wallet) Create() (core.BTCDInterface, error) {
@@ -37,8 +38,6 @@ func (wallet Wallet) Create() (core.BTCDInterface, error) {
 
 	defer f.Close()
 
-	fmt.Println(newWallet)
-
 	return newWallet, nil
 }
 
@@ -50,4 +49,28 @@ func (wallet Wallet) Authorize() (core.BTCDInterface, error) {
 
 func (wallet Wallet) Exists() (bool, error) {
 	return wallet.GetLoader().WalletExists()
+}
+
+// Creating a new account
+func (wallet Wallet) NextAccount(name string) (uint32, error) {
+	var w, err = wallet.Authorize()
+
+	// Converting to real type to get a real interface
+	coreWallet, err := w.(ltcdWallet.Wallet)
+
+	if err != nil {
+		return 0, nil
+	}
+
+	var keyScope = getKeyScope()
+
+	return coreWallet.NextAccount(keyScope, name)
+}
+
+func (wallet *Wallet) KeyScope() *core.KeyScope {
+	return nil
+}
+
+func getKeyScope() waddrmgr.KeyScope {
+	return waddrmgr.KeyScopeBIP0044
 }

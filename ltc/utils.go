@@ -1,7 +1,6 @@
 package ltc
 
 import (
-	"fmt"
 	"github.com/btcsuite/btcwallet/netparams"
 	btcdWallet "github.com/btcsuite/btcwallet/wallet"
 	"github.com/joho/godotenv"
@@ -9,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 )
+
+const coinName = "ltc"
 
 func init() {
 	err := godotenv.Load()
@@ -25,8 +26,6 @@ func (wallet *Wallet) GetLoader() *btcdWallet.Loader {
 	var network = wallet.GetNetwork()
 
 	var path = wallet.Path()
-
-	fmt.Println(path)
 
 	return btcdWallet.NewLoader(network.Params, path, 0255)
 }
