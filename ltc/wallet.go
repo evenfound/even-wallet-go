@@ -1,10 +1,11 @@
 package ltc
 
 import (
+	"errors"
 	"github.com/ltcsuite/ltcwallet/waddrmgr"
 	ltcdWallet "github.com/ltcsuite/ltcwallet/wallet"
 	_ "github.com/ltcsuite/ltcwallet/walletdb/bdb"
-	"hdgen/core"
+	"github.com/evenfound/even-wallet-go/core"
 	"os"
 	"path/filepath"
 	"time"
@@ -55,11 +56,15 @@ func (wallet Wallet) Exists() (bool, error) {
 func (wallet Wallet) NextAccount(name string) (uint32, error) {
 	var w, err = wallet.Authorize()
 
-	// Converting to real type to get a real interface
-	coreWallet, err := w.(ltcdWallet.Wallet)
-
 	if err != nil {
-		return 0, nil
+		return 0, err
+	}
+
+	// Converting to real type to get a real interface
+	coreWallet, ok := w.(ltcdWallet.Wallet)
+
+	if !ok {
+		return 0, errors.New(core.UnknownError)
 	}
 
 	var keyScope = getKeyScope()

@@ -3,13 +3,11 @@ package ltc
 import (
 	"github.com/btcsuite/btcwallet/netparams"
 	btcdWallet "github.com/btcsuite/btcwallet/wallet"
+	"github.com/evenfound/even-wallet-go/core"
 	"github.com/joho/godotenv"
-	"hdgen/core"
 	"os"
 	"path/filepath"
 )
-
-const coinName = "ltc"
 
 func init() {
 	err := godotenv.Load()

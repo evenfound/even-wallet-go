@@ -7,6 +7,10 @@ import (
 
 type BTCDInterface interface{}
 
+const (
+	UnknownError = "Unknown error"
+)
+
 type HDWallet struct {
 	Name     string // wallet name
 	Password string // password for symmetric encryption and wallet authorization

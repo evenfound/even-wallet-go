@@ -2,9 +2,9 @@ package hdgen
 
 import (
 	"errors"
-	"hdgen/btc"
-	"hdgen/core"
-	"hdgen/ltc"
+	"github.com/evenfound/even-wallet-go/btc"
+	"github.com/evenfound/even-wallet-go/core"
+	"github.com/evenfound/even-wallet-go/ltc"
 	"strings"
 )
 
