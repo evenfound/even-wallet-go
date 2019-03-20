@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/foxnut/go-hdwallet"
-	"github.com/tyler-smith/go-bip39"
 )
 
 type HDWallet struct {
@@ -44,14 +43,15 @@ func (wallet *HDWallet) Create(mnemonic, password string) string {
 // Authorize function authorizes given mnemonic phrase by validation it via BIP39 standards
 // If an error caused user will be receive an error message using GetErrorMessage function, otherwise
 // in the object will be available master wallet
-func (wallet *HDWallet) Authorize(mnemonic string) bool {
+func (wallet *HDWallet) Authorize(seed string) bool {
+	var hash, err = hex.DecodeString(seed)
 
-	if _, err := bip39.MnemonicToByteArray(mnemonic); err != nil {
+	if err != nil {
 		wallet.setError(err)
 		return false
 	}
 
-	master, err := hdwallet.NewKey(hdwallet.Seed([]byte(mnemonic)))
+	master, err := hdwallet.NewKey(hdwallet.Seed(hash))
 
 	if err != nil {
 		wallet.setError(err)
@@ -73,7 +73,7 @@ func (wallet *HDWallet) NewAddress(coin, account, change, address int) (addr str
 	addressUint32 := uint32(address)
 	changeUint32 := uint32(change)
 	accountUint32 := uint32(account)
-	coinUint32 := uint32(coin)
+	coinUint32 := uint32(0x80000000 + coin)
 
 	if wallet.masterWallet == nil {
 		wallet.setError(errors.New("Unauthorized"))

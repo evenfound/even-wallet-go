@@ -17,8 +17,8 @@ even-wallet-go is currently extended with the following plugins.
 
 | Plugin | README |
 | ------ | ------ |
-| btcsuite/btcwallet | https://github.com/btcsuite/btcwallet/blob/master/README.md |
-| ltcsuite/ltcswallet | https://github.com/ltcsuite/ltcwallet/blob/master/README.md |
+| foxnut/go-hdwallet | https://github.com/foxnut/go-hdwallet/blob/master/README.md |
+| tyler-smith/go-bip39 | https://github.com/tyler-smith/go-bip39/blob/master/README.md |
 
 
 ### Development
@@ -49,19 +49,17 @@ import (
 )
 
 func main() {
-  // initializing HDWallet to make available all functionality 
-	var wallet = hdgen.Wallet{
-		HDWallet: core.HDWallet{
-			Name:     "wallet_name",
-			Password: "strong_password",
-			Phrase:   "PRIVATE_MNEMONIC_PHRASE",
-			TestNet:  false,
-		},
-		Coin: "BTC",
-	}
-
-  // Creating new wallet
-	wallet.Create()
+   // generating a new seed / wallet
+  var seed = wallet.Create("SEED_PHRASE", "STRONG_PASSWORD")
+  
+  // authorizing wallet to validate seed 
+  
+  if wallet.Authorize(seed) {
+  		// generating a new address
+  		var address  = wallet.NewAddress(0, 0, 0, 1)
+  	} else {
+  		fmt.Println(wallet.GetErrorMessage())
+  	}
 }
 
 
