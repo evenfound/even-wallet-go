@@ -3,6 +3,7 @@ package hdgen
 import (
 	"encoding/hex"
 	"errors"
+	"github.com/evenfound/even-wallet-go/tx"
 	"github.com/foxnut/go-hdwallet"
 )
 
@@ -73,13 +74,21 @@ func (wallet *HDWallet) NewAddress(coin, account, change, address int) (addr str
 	addressUint32 := uint32(address)
 	changeUint32 := uint32(change)
 	accountUint32 := uint32(account)
-	coinUint32 := uint32(0x80000000 + coin)
+
+	var coinType uint32
+	var coinData, ok = tx.Coins[coin]
+
+	if ok {
+		coinType = coinData.Type
+	}
+
+	hdwallet.CoinType(hdwallet.BTC)
 
 	if wallet.masterWallet == nil {
 		wallet.setError(errors.New("Unauthorized"))
 	} else {
 		var hdWallet, err = wallet.masterWallet.GetWallet(
-			hdwallet.CoinType(coinUint32),
+			hdwallet.CoinType(coinType),
 			hdwallet.Account(accountUint32),
 			hdwallet.Change(changeUint32),
 			hdwallet.AddressIndex(addressUint32),
@@ -97,6 +106,7 @@ func (wallet *HDWallet) NewAddress(coin, account, change, address int) (addr str
 	return
 }
 
+// WIF function returns WIF (Wallet import format) to sign transactions
 func (wallet *HDWallet) WIF(coin, account, change, address int) (privateKey string) {
 	addressUint32 := uint32(address)
 	changeUint32 := uint32(change)
