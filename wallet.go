@@ -97,6 +97,7 @@ func (wallet *HDWallet) NewAddress(coin, account, change, address int) (addr str
 	return
 }
 
+// WIF function returns WIF (Wallet import format) to sign transactions
 func (wallet *HDWallet) WIF(coin, account, change, address int) (privateKey string) {
 	addressUint32 := uint32(address)
 	changeUint32 := uint32(change)
