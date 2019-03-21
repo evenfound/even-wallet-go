@@ -96,3 +96,30 @@ func (wallet *HDWallet) NewAddress(coin, account, change, address int) (addr str
 	}
 	return
 }
+
+func (wallet *HDWallet) WIF(coin, account, change, address int) (privateKey string) {
+	addressUint32 := uint32(address)
+	changeUint32 := uint32(change)
+	accountUint32 := uint32(account)
+	coinUint32 := uint32(0x80000000 + coin)
+
+	if wallet.masterWallet == nil {
+		wallet.setError(errors.New("Unauthorized"))
+	} else {
+		var key, err = wallet.masterWallet.GetChildKey(
+			hdwallet.CoinType(coinUint32),
+			hdwallet.Account(accountUint32),
+			hdwallet.Change(changeUint32),
+			hdwallet.AddressIndex(addressUint32),
+		)
+
+		wif, err := key.PrivateWIF(false)
+
+		if err != nil {
+			wallet.setError(err)
+		} else {
+			return wif
+		}
+	}
+	return ""
+}
