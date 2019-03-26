@@ -19,6 +19,8 @@ even-wallet-go is currently extended with the following plugins.
 | ------ | ------ |
 | foxnut/go-hdwallet | https://github.com/foxnut/go-hdwallet/blob/master/README.md |
 | tyler-smith/go-bip39 | https://github.com/tyler-smith/go-bip39/blob/master/README.md |
+| btcsuite/btcd | https://github.com/btcsuite/btcd/blob/master/README.md |
+| ltcsuite/ltcd | https://github.com/ltcsuite/ltcd/blob/master/README.md |
 
 
 ### Development
