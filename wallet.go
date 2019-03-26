@@ -111,13 +111,18 @@ func (wallet *HDWallet) WIF(coin, account, change, address int) (privateKey stri
 	addressUint32 := uint32(address)
 	changeUint32 := uint32(change)
 	accountUint32 := uint32(account)
-	coinUint32 := uint32(0x80000000 + coin)
+	var coinType uint32
+	var coinData, ok = tx.Coins[coin]
+
+	if ok {
+		coinType = coinData.Type
+	}
 
 	if wallet.masterWallet == nil {
 		wallet.setError(errors.New("Unauthorized"))
 	} else {
 		var key, err = wallet.masterWallet.GetChildKey(
-			hdwallet.CoinType(coinUint32),
+			hdwallet.CoinType(coinType),
 			hdwallet.Account(accountUint32),
 			hdwallet.Change(changeUint32),
 			hdwallet.AddressIndex(addressUint32),
