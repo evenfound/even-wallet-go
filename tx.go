@@ -17,7 +17,7 @@ type Transaction struct {
 func (tr *Transaction) Make(coin int, secret, destination, txHash string, amount int64) {
 	if data, ok := tx.Coins[coin]; ok {
 
-		var txs, err = data.Make(secret, destination, txHash, amount)
+		var txs, err = data.Transaction.Make(secret, destination, txHash, amount)
 
 		if err == nil {
 			tr.signedTx = txs.GetSignedTransaction()
