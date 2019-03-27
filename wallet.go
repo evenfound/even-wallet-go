@@ -3,6 +3,7 @@ package hdgen
 import (
 	"encoding/hex"
 	"errors"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/evenfound/even-wallet-go/tx"
 	"github.com/foxnut/go-hdwallet"
 )
@@ -12,6 +13,8 @@ type HDWallet struct {
 
 	masterWallet *hdwallet.Key
 	baseWallet   *hdwallet.Wallet
+
+	testNet bool
 }
 
 // setError function sets an error
@@ -87,12 +90,20 @@ func (wallet *HDWallet) NewAddress(coin, account, change, address int) (addr str
 	if wallet.masterWallet == nil {
 		wallet.setError(errors.New("Unauthorized"))
 	} else {
+		var params = chaincfg.MainNetParams
+
+		if wallet.testNet {
+			params = chaincfg.TestNet3Params
+		}
+
 		var hdWallet, err = wallet.masterWallet.GetWallet(
+			hdwallet.Params(&params),
 			hdwallet.CoinType(coinType),
 			hdwallet.Account(accountUint32),
 			hdwallet.Change(changeUint32),
 			hdwallet.AddressIndex(addressUint32),
 		)
+
 		if err != nil {
 			wallet.setError(err)
 		} else {
@@ -100,6 +111,7 @@ func (wallet *HDWallet) NewAddress(coin, account, change, address int) (addr str
 			if err != nil {
 				addr = ""
 				wallet.setError(err)
+				//
 			}
 		}
 	}
@@ -136,5 +148,10 @@ func (wallet *HDWallet) WIF(coin, account, change, address int) (privateKey stri
 			return wif
 		}
 	}
+
 	return ""
+}
+
+func (wallet *HDWallet) IsTestNet(testNet bool) {
+	wallet.testNet = testNet
 }
