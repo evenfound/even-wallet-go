@@ -4,6 +4,10 @@ import (
 	"github.com/evenfound/even-wallet-go/tx"
 )
 
+const (
+	UnsupportedCoinType = "Unsupported coin type"
+)
+
 type Transaction struct {
 	errorMessage string
 
@@ -24,7 +28,7 @@ func (tr *Transaction) Make(coin int, secret, destination, txHash string, amount
 			tr.errorMessage = err.Error()
 		}
 	} else {
-		tr.errorMessage = "Unsupported coin type"
+		tr.errorMessage = UnsupportedCoinType
 	}
 }
 
