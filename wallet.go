@@ -8,6 +8,10 @@ import (
 	"github.com/foxnut/go-hdwallet"
 )
 
+const (
+	UnAuthorized = "Unauthorized"
+)
+
 type HDWallet struct {
 	errorMessage error
 
@@ -25,7 +29,10 @@ func (wallet *HDWallet) setError(err error) {
 // GetErrorMessage parse an error message from error object and returns it to user
 // If there is an't  error than user will be receive empty string
 func (wallet *HDWallet) GetErrorMessage() string {
-	return wallet.errorMessage.Error()
+	if wallet.errorMessage != nil {
+		return wallet.errorMessage.Error()
+	}
+	return ""
 }
 
 // Creating a new seed hash from mnemonic phrase and password
@@ -73,22 +80,21 @@ func (wallet *HDWallet) Authorize(seed string) bool {
 // otherwise user will be receive an address
 func (wallet *HDWallet) NewAddress(coin, account, change, address int) (addr string) {
 
+	coinData, ok := tx.Coins[coin]
+	if !ok {
+		wallet.setError(errors.New(UnsupportedCoinType))
+		return ""
+	}
+
 	// Converting int to uint32
 	addressUint32 := uint32(address)
 	changeUint32 := uint32(change)
 	accountUint32 := uint32(account)
 
-	var coinType uint32
-	var coinData, ok = tx.Coins[coin]
-
-	if ok {
-		coinType = coinData.Type
-	}
-
 	hdwallet.CoinType(hdwallet.BTC)
 
 	if wallet.masterWallet == nil {
-		wallet.setError(errors.New("Unauthorized"))
+		wallet.setError(errors.New(UnAuthorized))
 	} else {
 		var params = chaincfg.MainNetParams
 
@@ -98,7 +104,7 @@ func (wallet *HDWallet) NewAddress(coin, account, change, address int) (addr str
 
 		var hdWallet, err = wallet.masterWallet.GetWallet(
 			hdwallet.Params(&params),
-			hdwallet.CoinType(coinType),
+			hdwallet.CoinType(coinData.Type),
 			hdwallet.Account(accountUint32),
 			hdwallet.Change(changeUint32),
 			hdwallet.AddressIndex(addressUint32),
@@ -119,7 +125,7 @@ func (wallet *HDWallet) NewAddress(coin, account, change, address int) (addr str
 }
 
 // WIF function returns WIF (Wallet import format) to sign transactions
-func (wallet *HDWallet) WIF(coin, account, change, address int) (privateKey string) {
+func (wallet *HDWallet) WIF(coin, account, change, address int) string {
 	addressUint32 := uint32(address)
 	changeUint32 := uint32(change)
 	accountUint32 := uint32(account)
@@ -128,25 +134,24 @@ func (wallet *HDWallet) WIF(coin, account, change, address int) (privateKey stri
 
 	if ok {
 		coinType = coinData.Type
-	}
-
-	if wallet.masterWallet == nil {
-		wallet.setError(errors.New("Unauthorized"))
-	} else {
-		var key, err = wallet.masterWallet.GetChildKey(
-			hdwallet.CoinType(coinType),
-			hdwallet.Account(accountUint32),
-			hdwallet.Change(changeUint32),
-			hdwallet.AddressIndex(addressUint32),
-		)
-
-		wif, err := key.PrivateWIF(false)
-
-		if err != nil {
-			wallet.setError(err)
+		if wallet.masterWallet == nil {
+			wallet.setError(errors.New("Unauthorized"))
 		} else {
-			return wif
+			var key, err = wallet.masterWallet.GetChildKey(
+				hdwallet.CoinType(coinType),
+				hdwallet.Account(accountUint32),
+				hdwallet.Change(changeUint32),
+				hdwallet.AddressIndex(addressUint32),
+			)
+			wif, err := key.PrivateWIF(false)
+			if err != nil {
+				wallet.setError(err)
+			} else {
+				return wif
+			}
 		}
+	} else {
+		wallet.setError(errors.New(UnsupportedCoinType))
 	}
 
 	return ""
